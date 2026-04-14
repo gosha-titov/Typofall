@@ -1,0 +1,19 @@
+#if canImport(UIKit)
+
+import UIKit
+
+extension UIEdgeInsets {
+    
+    @inline(__always)
+    var vertical: CGFloat {
+        return top + bottom
+    }
+    
+    @inline(__always)
+    var horizontal: CGFloat {
+        return left + right
+    }
+    
+}
+
+#endif

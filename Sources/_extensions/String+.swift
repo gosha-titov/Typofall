@@ -4,15 +4,17 @@ internal extension String {
     
     @inline(__always)
     func commonSuffix(with str: String) -> String {
-        var suffix = String()
-        let min = min(count, str.count)
-        let str1 = self.suffix(min)
-        let str2 = str .suffix(min)
-        for (char1, char2) in zip(str1, str2).reversed() {
-            if char1 == char2 { suffix += char1 }
-            else { break }
+        var index1 = endIndex, index2 = str.endIndex
+        while index1 > startIndex && index2 > str.startIndex {
+            self.formIndex(before: &index1)
+            str .formIndex(before: &index2)
+            if self[index1] != str[index2] {
+                self.formIndex(after: &index1)
+                str .formIndex(after: &index2)
+                break
+            }
         }
-        return String(suffix.reversed())
+        return String(self[index1..<endIndex])
     }
     
     
