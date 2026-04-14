@@ -9,12 +9,12 @@
 ///
 /// ## Example
 /// ```
-/// let accurateText = "Hello"
-/// let comparedText = "hola"
+/// let idealText = "Hello"
+/// let inputText = "hola"
 ///
 /// let basis = TFAlgebra.basis(
-///     for: comparedText,
-///     relyingOn: accurateText
+///     diffing: inputText,
+///     against: idealText
 /// )
 ///
 /// basis.sourceSequence  // [0, 1, 2, 3, 4]
@@ -23,7 +23,7 @@
 /// basis.missingElements // [   1,    3, 4]
 /// ```
 /// - Note: The value of each element of the sequence is the index of the associated char in the source text.
-internal struct TFBasis: Equatable {
+internal struct TFBasis: Sendable {
     
     /// The complete sequence of indices representing all characters in the reference text.
     ///
@@ -84,6 +84,20 @@ extension TFBasis {
     @inline(__always)
     init() {
         self.init(TFSequence(), TFOptionalSequence(), TFSubsequence())
+    }
+    
+}
+
+
+extension TFBasis: Equatable {
+    
+    @inline(__always)
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        guard lhs.subsequence == rhs.subsequence,
+              lhs.sequence == rhs.sequence,
+              lhs.sourceSequence == rhs.sourceSequence
+        else { return false }
+        return true
     }
     
 }

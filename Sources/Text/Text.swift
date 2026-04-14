@@ -6,17 +6,26 @@
 ///
 /// ## Example
 /// ```
-/// let text = TFText([
-///     .correct("H", hasCorrectCase: false),
-///     .correct("e", hasCorrectCase: true),
-///     .correct("l", hasCorrectCase: true),
-///     .correct("l", hasCorrectCase: true),
-///     .missing("o", hasCorrectCase: nil)
-/// ])
+/// let configuration = TFConfiguration(
+///     textCaseStrategy: .insensitive(.lowercased)
+/// )
+///
+/// let text = TFText(
+///     comparing: "Hola",
+///     against: "hello",
+///     using: configuration
+/// )
+/// /*[.correct ("h"),
+///    .misspell("o", correct: "e"),
+///    .correct ("l"),
+///    .misspell("a", correct: "l"),
+///    .missing ("o")
+/// ]*/
+///
 /// text.isAbsolutelyRight // false
 /// text.isCompletelyWrong // false
-/// text.countOfTyposAndMistakes // 1
-/// text.countOfWrongLetterCases // 1
+/// text.countOfTyposAndMistakes // 3
+/// text.countOfWrongLetterCases // 0
 /// ```
 public struct TFText: Equatable, Sendable {
     
@@ -24,7 +33,6 @@ public struct TFText: Equatable, Sendable {
     public var characters: [TFCharacter]
     
     /// Creates a text with the given characters.
-    @inline(__always)
     public init<S: Sequence>(_ characters: S) where S.Element == TFCharacter {
         self.characters = Array(characters)
     }
@@ -34,6 +42,21 @@ public struct TFText: Equatable, Sendable {
 
 
 // MARK: - Behavior Extensions
+
+extension TFText {
+    
+    /// Creates a text diff by comparing a user's input against an ideal reference.
+    /// - Parameters:
+    ///   - inputText: The text to be compared (typically the user's input).
+    ///   - idealText: The reference text (the correct version).
+    ///   - configuration: The configuration that defines the rules for evaluating a user’s text against a reference (e.g., case sensitivity, text transformations).
+    public init(comparing inputText: String, against idealText: String, using configuration: TFConfiguration) {
+        let rawText = TFOrigin.text(from: inputText, relyingOn: idealText, with: configuration)
+        self = TFRefinement.refining(rawText, with: configuration)
+    }
+    
+}
+
 
 extension TFText {
     

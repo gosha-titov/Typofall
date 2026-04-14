@@ -57,7 +57,7 @@ import Foundation
 // Second example
 // ––––––––––––––
 //
-//  Let's take the accurate text = "abab" and the compared text = "baba":
+//  Let's take the `idealString` = "abab" and the `inputString` = "baba":
 //
 //  Firstly, we create the correct sequence for the accurate text, it's [0, 1, 2, 3]
 //  Then we make a following table based on this sequence and the accurate text:
@@ -94,7 +94,7 @@ import Foundation
 //   - Next three characters map to [0, 1, 2] are correct
 //   - Last character of reference is missing.
 //
-//  Note, that final count of operations = (identical chars in reference) × (identical chars in user)
+//  Note, that final count of operations = (identical chars in ideal string) × (identical chars in input string)
 //  That is, 3*3=9 operations are performed for this example.
 //  For "aaaaabbb" and "bbbaaaaa", 126*10=1260 operations are performed.
 //  But this is without optimizations, because when using them, the final count is only ONE.
@@ -106,19 +106,19 @@ import Foundation
 // General Optimization
 // ––––––––––––––––––––
 //
-//  accurateText: "123a456bc789"
-//  comparedText: "123bc456a789"
+//  idealString: "123a456bc789"
+//  inputString: "123bc456a789"
 //
 //  1. Remove common prefix and suffix:
 //
-//  accurateText: "123" [ "a456bc" ] "789"
-//  comparedText: "123" [ "bc456c" ] "789"
+//  idealString: "123" [ "a456bc" ] "789"
+//  inputString: "123" [ "bc456c" ] "789"
 //
 //  2. Find a long common substring (longer than half the shorter remaining text):
 //
-//  accurateText: "123" [ "a"  ] "456" [ "bc" ] "789"
-//  comparedText: "123" [ "bc" ] "456" [ "c"  ] "789"
-//                        ^^^^           ^^^^
+//  idealString: "123" [ "a"  ] "456" [ "bc" ] "789"
+//  inputString: "123" [ "bc" ] "456" [ "c"  ] "789"
+//                     ^^^^           ^^^^
 //
 //  3. Only small parts remain for the full LIS‑based matching.
 //
@@ -146,13 +146,13 @@ internal final class TFAlgebra {
     /// respecting order and accounting for possible mismatches, insertions, deletions, and swaps.
     ///
     /// ## Example
-    /// ```swift
-    /// let accurateText = "Hello"
-    /// let comparedText = "hola"
+    /// ```
+    /// let idealString = "Hello"
+    /// let inputString = "hola"
     ///
     /// let basis = TFAlgebra.basis(
-    ///     for: comparedText,
-    ///     relyingOn: accurateText
+    ///     diffing: inputString,
+    ///     against: idealString
     /// )
     ///
     /// basis.sourceSequence  // [0, 1, 2, 3, 4]
@@ -163,42 +163,42 @@ internal final class TFAlgebra {
     /// - Note: Both texts are converted to lowercase before processing.
     ///   Case sensitivity is handled at a higher level (by `TFStrategy`).
     /// - Parameters:
-    ///   - comparedText: The user's input text to be evaluated.
-    ///   - accurateText: The reference (correct) text.
+    ///   - inputString: The user's input text to be evaluated.
+    ///   - idealString: The reference (correct) text.
     /// - Returns: A `TFBasis` containing the index‑based representation of the best matching between the two texts.
-    static func basis(for comparedText: String, relyingOn accurateText: String) -> TFBasis {
+    static func basis(diffing inputString: String, against idealString: String) -> TFBasis {
         
         // Step 1: Case‑insensitive normalisation (lowercase)
-        let comparedText = comparedText.lowercased(), accurateText = accurateText.lowercased()
-        let accurateSequence = TFSequence(0..<accurateText.count)
+        let inputString = inputString.lowercased(), idealString = idealString.lowercased()
+        let idealSequence = TFSequence(0..<idealString.count)
         
         // Step 2: Extract common prefix and suffix (optimisation)
-        let prefixCount = comparedText.commonPrefix(with: accurateText).count
-        var partialAccurateText = accurateText.dropFirst(prefixCount).toString()
-        var partialComparedText = comparedText.dropFirst(prefixCount).toString()
+        let prefixCount = inputString.commonPrefix(with: idealString).count
+        var partialIdealString = idealString.dropFirst(prefixCount).toString()
+        var partialInputString = inputString.dropFirst(prefixCount).toString()
         
-        let suffixCount = partialComparedText.commonSuffix(with: partialAccurateText).count
-        partialAccurateText = partialAccurateText.dropLast(suffixCount).toString()
-        partialComparedText = partialComparedText.dropLast(suffixCount).toString()
+        let suffixCount = partialInputString.commonSuffix(with: partialIdealString).count
+        partialIdealString = partialIdealString.dropLast(suffixCount).toString()
+        partialInputString = partialInputString.dropLast(suffixCount).toString()
         
         // Steps 3: Process the remaining middle part
-        let sequences = sequences(for: partialComparedText, relyingOn: partialAccurateText)
+        let sequences = sequences(diffing: partialInputString, against: partialIdealString)
         let dyads = dyads(from: sequences)
         let dyad = bestDyad(among: dyads)
         
         // Step 4: Restore the common prefix and suffix indices
-        let accurateSequencePrefix = accurateSequence.prefix(prefixCount).toArray()
-        let accurateSequenceSuffix = accurateSequence.suffix(suffixCount).toArray()
+        let idealSequencePrefix = idealSequence.prefix(prefixCount).toArray()
+        let idealSequenceSuffix = idealSequence.suffix(suffixCount).toArray()
         
         // Shift the middle part indices by the length of the prefix
         let shiftedPartialSequence    = dyad.sequence   .map { $0.hasValue ? $0! + prefixCount : nil }
         let shiftedPartialSubsequence = dyad.subsequence.map {               $0  + prefixCount       }
         
         // Step 5: Assemble the complete sequences
-        let sequence    = accurateSequencePrefix + shiftedPartialSequence    + accurateSequenceSuffix
-        let subsequence = accurateSequencePrefix + shiftedPartialSubsequence + accurateSequenceSuffix
+        let sequence    = idealSequencePrefix + shiftedPartialSequence    + idealSequenceSuffix
+        let subsequence = idealSequencePrefix + shiftedPartialSubsequence + idealSequenceSuffix
         
-        return TFBasis(accurateSequence, sequence, subsequence)
+        return TFBasis(idealSequence, sequence, subsequence)
     }
     
     
@@ -224,7 +224,7 @@ internal final class TFAlgebra {
     /// ```
     /// - Important: This method assumes that **all subsequences have the same length**.
     ///   If lengths differ, comparing sums is meaningless and the result is undefined.
-    ///   The method is intended to be used after filtering by LIS length (e.g., via `makeRawPairs(from:)`).
+    ///   The method is intended to be used after filtering by LIS length.
     /// - Returns: The pair with the smallest sum of its `subsequence` array.
     ///   If the array is empty, returns an empty pair.
     @inline(__always)
@@ -270,22 +270,22 @@ internal final class TFAlgebra {
     ///
     /// let dyads = TFAlgebra.dyads(from: sequences)
     /// /* [TFDyad([nil, 1, 2, 4, 1], [1, 2, 4]),
-    ///     TFDyad([nil, 1, 2, 4, 3], [1, 2, 3])] */
+    ///     TFDyad([nil, 1, 2, 4, 3], [1, 2, 3])
+    /// ] */
     /// ```
     /// - Important: Only raw sequences whose LIS length is **equal to the global maximum** are included in the result.
     /// This discards suboptimal matchings.
     /// - Returns: An array of `TFDyad` containing only the pairs with the longest possible increasing subsequence.
     @inline(__always)
-    static func dyads(from rawSequences: [TFOptionalSequence]) -> [TFDyad] {
+    static func dyads(from sequences: [TFOptionalSequence]) -> [TFDyad] {
         
         var dyads = [TFDyad]()
         var maxCount = Int()
         
-        for rawSequence in rawSequences {
-            let sequence = rawSequence.compactMap { $0 }
-            let subsequence = lis(of: sequence)
+        for sequence in sequences {
+            let subsequence = lis(of: sequence.compactMap { $0 })
             if subsequence.count >= maxCount {
-                let dyad = TFDyad(rawSequence, subsequence)
+                let dyad = TFDyad(sequence, subsequence)
                 dyads.append(dyad)
                 maxCount = subsequence.count
             }
@@ -297,14 +297,14 @@ internal final class TFAlgebra {
     
     // MARK: - Generate Raw Sequences
 
-    /// Generates all possible sequences of indices from `accurateText` that can match characters in `comparedText`.
+    /// Generates all possible sequences of indices from `idealString` that can match characters in `inputString`.
     ///
     /// This method builds a set of **raw sequences** (each an `OptionalSequence` of `Int?` values)
-    /// representing all plausible ways to map each character of `comparedText` to a position in `accurateText`
-    /// while preserving the relative order of characters in `accurateText`.
+    /// representing all plausible ways to map each character of `inputString` to a position in `idealString`
+    /// while preserving the relative order of characters in `idealString`.
     ///
-    /// The algorithm performs a recursive depth‑first search over the characters of `comparedText`.
-    /// At each step, for a given character, it considers all positions in `accurateText` where that character occurs (ignoring case),
+    /// The algorithm performs a recursive depth‑first search over the characters of `inputString`.
+    /// At each step, for a given character, it considers all positions in `idealString` where that character occurs (ignoring case),
     /// provided the chosen position is **not less than** any previously chosen position for the same character (to keep the sequence non‑decreasing).
     /// For consecutive identical characters, additional constraints ensure positions are strictly increasing.
     ///
@@ -313,16 +313,17 @@ internal final class TFAlgebra {
     ///
     /// ## Example
     /// ```
-    /// let accurateText = "robot"
-    /// let comparedText = "gotob"
+    /// let idealString = "robot"
+    /// let inputString = "gotob"
     ///
     /// let sequences = TFAlgebra.sequences(
-    ///     for: comparedText,
-    ///     relyingOn: accurateText
+    ///     diffing: inputString,
+    ///     against: idealString
     /// )
     /// /* [[nil, 1, 4, 1, 2],
     ///     [nil, 1, 4, 3, 2],
-    ///     [nil, 3, 4, 3, 2]] */
+    ///     [nil, 3, 4, 3, 2]
+    /// ] */
     /// ```
     ///
     ///  In this example:
@@ -336,14 +337,14 @@ internal final class TFAlgebra {
     /// - Complexity: In the worst case, exponential (number of possible matchings),
     ///   but the constraints keep it manageable for typical typo‑detection scenarios.
     /// - Returns: An array of `OptionalSequence` (each `[Int?]`), where each element represents
-    ///   a possible mapping from the indices of `comparedText` to indices in `accurateText` (or `nil` when no match exists).
+    ///   a possible mapping from the indices of `inputString` to indices in `idealString` (or `nil` when no match exists).
     @inline(__always)
-    static func sequences(for comparedText: String, relyingOn accurateText: String) -> [TFOptionalSequence] {
+    static func sequences(diffing inputString: String, against idealString: String) -> [TFOptionalSequence] {
         
         // First Example
         // –––––––––––––
         //
-        // comparedText is "caba", accurateText is "acab"
+        // inputString is "caba", idealString is "acab"
         //
         // dict is ["a": [0, 2], "c": [1], b: [3]]
         //
@@ -354,13 +355,13 @@ internal final class TFAlgebra {
         //   │
         //   └──> 2 ──> 3 ──> 2
         //
-        // rawSequences are [ [1, 0, 3, 0], [1, 0, 3, 2], [1, 2, 3, 2] ]
+        // sequences are [ [1, 0, 3, 0], [1, 0, 3, 2], [1, 2, 3, 2] ]
         //
         //
         // Second Example
         // ––––––––––––––
         //
-        // comparedText is "caaaba", accurateText is "baaaac"
+        // inputString is "caaaba", idealString is "baaaac"
         //
         // dict is ["b": [0], "a": [1, 2, 3, 4], "c": [5]]
         //
@@ -369,13 +370,12 @@ internal final class TFAlgebra {
         //                           │
         //                           └──> 4
         //
-        // rawSequences are [ [5, 1, 2, 3, 0, 3], [5, 1, 2, 3, 0, 4] ]
+        // sequences are [ [5, 1, 2, 3, 0, 3], [5, 1, 2, 3, 0, 4] ]
         //
         
-        var rawSequences = [TFOptionalSequence]()
+        var sequences = [TFOptionalSequence]()
         
-        let dict = indices(of: accurateText)
-        let comparedText = comparedText.lowercased()
+        let dict = characterIndices(of: idealString)
         
         // Buffer that stores, for each character, the list of indices already chosen in the current sequence.
         // Used to enforce non‑decreasing order for the same character across multiple occurrences.
@@ -384,18 +384,18 @@ internal final class TFAlgebra {
         func recursion(_ sequence: TFOptionalSequence) -> Void {
             let currentIndex = sequence.count
             // If we've processed all characters of `comparedText`, store the completed sequence
-            guard currentIndex < comparedText.count else {
-                rawSequences.append(sequence)
+            guard currentIndex < inputString.count else {
+                sequences.append(sequence)
                 return
             }
-            let currentChar = comparedText[currentIndex]
+            let currentChar = inputString[currentIndex]
             // Take all possible positions for the current char
             if let sourcePositions = dict[currentChar] {
                 for currentPosition in sourcePositions {
                     // Enforce non‑decreasing order: the new position must be >= the last chosen position for this character
                     if let positionsOfCurrentChar = buffer[currentChar], let lastPosition = positionsOfCurrentChar.last {
                         guard currentPosition >= lastPosition else { continue }
-                        let previousChar = comparedText[currentIndex - 1]
+                        let previousChar = inputString[currentIndex - 1]
                         // Special handling for consecutive identical characters: they must either increase by exactly 1 or be at the last available position.
                         if previousChar == currentChar {
                             let biggestPosition = sourcePositions.last!
@@ -412,7 +412,7 @@ internal final class TFAlgebra {
                     buffer[currentChar]!.removeLast()
                     // If the next character is the same as the current one, only the first suitable position is needed
                     // because the algorithm will handle consecutive duplicates with strict constraints
-                    if let nextChar = comparedText[safe: currentIndex + 1] {
+                    if let nextChar = inputString[safe: currentIndex + 1] {
                         guard currentChar != nextChar else { break }
                     }
                 }
@@ -423,7 +423,7 @@ internal final class TFAlgebra {
         }
         
         recursion([])
-        return rawSequences
+        return sequences
     }
     
     
@@ -439,16 +439,17 @@ internal final class TFAlgebra {
     ///
     /// ## Example
     /// ```
-    /// let reference = "Abcde"
-    /// let userInput = "aDftb"
-    /// let commonCount = TFAlgebra.commonCharactersCount(between: reference, and: userInput) // 3
+    /// let idealString = "Abcde"
+    /// let inputString = "aDftb"
+    /// let count = TFAlgebra.commonCharactersCount(between: idealString, and: inputString)
+    /// // 3
     /// ```
     /// - Note: Letter case does not affect the result; both texts are lowercased internally.
     /// - Returns: The total number of character occurrences common to both texts (counting duplicates).
     @inline(__always)
-    static func commonCharactersCount(between text1: String, and text2: String) -> Int {
-        let dict1 = indices(of: text1)
-        let dict2 = indices(of: text2)
+    static func commonCharactersCount(between string1: String, and string2: String) -> Int {
+        let dict1 = characterIndices(of: string1)
+        let dict2 = characterIndices(of: string2)
         var count = 0
         for (char1, positions1) in dict1 {
             if let positions2 = dict2[char1] {
@@ -469,8 +470,7 @@ internal final class TFAlgebra {
     ///
     /// ## Example
     /// ```
-    /// let text = "Robot"
-    /// let dict = TFAlgebra.indices(of: text)
+    /// let dict = TFAlgebra.characterIndices(of: "Robot")
     /// // ["r": [0], "o": [1, 3], "b": [2], "t": [4]]
     /// ```
     /// - Important: The text is **lowercased** before building the index map.
@@ -480,16 +480,16 @@ internal final class TFAlgebra {
     /// - Returns: A dictionary where keys are characters (lowercased) and values are
     ///   arrays of indices where that character appears in the original text (preserving original positions, only the key is lowercased).
     @inline(__always)
-    static func indices(of text: String) -> [Character: [Int]] {
+    static func characterIndices(of string: String) -> [Character: [Int]] {
         var dict = [Character: [Int]]()
-        for (index, char) in text.lowercased().enumerated() {
+        for (index, char) in string.lowercased().enumerated() {
             dict[char, default: []].append(index)
         }
         return dict
     }
     
     
-    // MARK: - Find Common Part
+    // MARK: - Find Common Segment
     
     /// Finds a contiguous substring common to both input strings that is longer than half the length of the shorter string.
     ///
@@ -505,32 +505,31 @@ internal final class TFAlgebra {
     ///
     /// ## Example
     /// ```
-    /// let text1 = "ab123"
-    /// let text2 = "a123"
-    /// let segment = TFAlgebra.commonSegment(between: text1, and: text2)!
+    /// let stirng1 = "abWWW"
+    /// let stirng2 = "aWWW"
+    /// let segment = TFAlgebra.commonSegment(between: string1, and: string2)!
     /// // (index1: 2, index2: 1, length: 3)
-    /// // Common substring: "123"
+    /// // Common substring: "WWW"
     /// ```
-    /// - Returns: A tuple `(index1: Int, index2: Int, length: Int)` representing
-    ///   the start index in `text1`, start index in `text2`, and the length of the common substring.
-    ///   Returns `nil` if no common substring longer than half the shorter string’s length exists.
+    /// - Returns: A tuple  representing the start index in `string1`, start index in `string2`, and the length of the common substring;
+    ///   otherwise, returns `nil` if no common substring longer than half the shorter string’s length exists.
     @inline(__always)
-    static func commonSegment(between text1: String, and text2: String) -> (index1: Int, index2: Int, length: Int)? {
+    static func commonSegment(between string1: String, and string2: String) -> (index1: Int, index2: Int, length: Int)? {
         func roundedHalf(of text: String) -> Int { return Int(round(Double(text.count)) / 2) }
         func rawHalf(of text: String) -> Int { return text.count / 2 }
-        let half = min(roundedHalf(of: text1), roundedHalf(of: text2))
-        let rawHalf = min(rawHalf(of: text1), rawHalf(of: text2))
-        for index1 in 0..<(text1.count - rawHalf) {
-            for index2 in 0..<(text2.count - rawHalf) {
-                let char1 = text1[index1]
-                let char2 = text2[index2]
+        let half = min(roundedHalf(of: string1), roundedHalf(of: string2))
+        let rawHalf = min(rawHalf(of: string1), rawHalf(of: string2))
+        for index1 in 0..<(string1.count - rawHalf) {
+            for index2 in 0..<(string2.count - rawHalf) {
+                let char1 = string1[index1]
+                let char2 = string2[index2]
                 if char1 == char2 {
-                    let maxOffset1 = text1.count - index1
-                    let maxOffset2 = text2.count - index2
+                    let maxOffset1 = string1.count - index1
+                    let maxOffset2 = string2.count - index2
                     var count = 1
                     for offset in 1..<min(maxOffset1, maxOffset2) {
-                        let char1 = text1[index1 + offset]
-                        let char2 = text2[index2 + offset]
+                        let char1 = string1[index1 + offset]
+                        let char2 = string2[index2 + offset]
                         guard char1 == char2 else { break }
                         count += 1
                     }

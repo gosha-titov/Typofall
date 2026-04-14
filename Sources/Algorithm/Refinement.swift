@@ -16,37 +16,37 @@
 //  └────────────────┘
 //
 //
-// Step 0: adjusting source text
+// Step 0: preparing source text
 // –––––––––––––––––––––––––––––
 //
-//      Initial values          After creation        After preparation      After refinement
-//  ┌──────────────┬─────┐    ┌───────┬─────────┐    ┌───────┬─────────┐    ┌───────┬───────┐
-//  │ accurateText │ day │    │ chars │ d a y y │    │ chars │ d a y y │    │ chars │ d y y │
-//  ├──────────────┼─────┤ ─> ├───────┼─────────┤ ─> ├───────┼─────────┤ ─> ├───────┼───────┤
-//  │ comparedText │ dyy │    │ types │ + ? + ! │    │ types │ + ? ! + │    │ types │ + a + │
-//  └──────────────┴─────┘    └───────┴─────────┘    └───────┴─────────┘    └───────┴───────┘
+//    Initial values         After creation        After preparation      After refinement
+//  ┌───────────┬─────┐    ┌───────┬─────────┐    ┌───────┬─────────┐    ┌───────┬───────┐
+//  │ idealText │ day │    │ chars │ d a y y │    │ chars │ d a y y │    │ chars │ d y y │
+//  ├───────────┼─────┤ ─> ├───────┼─────────┤ ─> ├───────┼─────────┤ ─> ├───────┼───────┤
+//  │ inputText │ dyy │    │ types │ + ? + ! │    │ types │ + ? ! + │    │ types │ + a + │
+//  └───────────┴─────┘    └───────┴─────────┘    └───────┴─────────┘    └───────┴───────┘
 //
 //
 // Step 1: adding misspell chars
 // –––––––––––––––––––––––––––––
 //
-//      Initial values          After creation        After refinement
-//  ┌──────────────┬─────┐    ┌───────┬─────────┐    ┌───────┬───────┐
-//  │ accurateText │ day │    │ chars │ d a e y │    │ chars │ d e y │
-//  ├──────────────┼─────┤ ─> ├───────┼─────────┤ ─> ├───────┼───────┤
-//  │ comparedText │ dey │    │ types │ + ? ! + │    │ types │ + a + │
-//  └──────────────┴─────┘    └───────┴─────────┘    └───────┴───────┘
+//    Initial values         After creation        After refinement
+//  ┌───────────┬─────┐    ┌───────┬─────────┐    ┌───────┬───────┐
+//  │ idealText │ day │    │ chars │ d a e y │    │ chars │ d e y │
+//  ├───────────┼─────┤ ─> ├───────┼─────────┤ ─> ├───────┼───────┤
+//  │ inputText │ dey │    │ types │ + ? ! + │    │ types │ + a + │
+//  └───────────┴─────┘    └───────┴─────────┘    └───────┴───────┘
 //
 //
 // Step 2: adding swapped chars
 // ––––––––––––––––––––––––––––
 //
-//      Initial values          After creation        After refinement
-//  ┌──────────────┬─────┐    ┌───────┬─────────┐    ┌───────┬───────┐
-//  │ accurateText │ day │    │ chars │ d y a y │    │ chars │ d y a │
-//  ├──────────────┼─────┤ ─> ├───────┼─────────┤ ─> ├───────┼───────┤
-//  │ comparedText │ dya │    │ types │ + ! + ? │    │ types │ + ^ ^ │
-//  └──────────────┴─────┘    └───────┴─────────┘    └───────┴───────┘
+//    Initial values         After creation        After refinement
+//  ┌───────────┬─────┐    ┌───────┬─────────┐    ┌───────┬───────┐
+//  │ idealText │ day │    │ chars │ d y a y │    │ chars │ d y a │
+//  ├───────────┼─────┤ ─> ├───────┼─────────┤ ─> ├───────┼───────┤
+//  │ inputText │ dya │    │ types │ + ! + ? │    │ types │ + ^ ^ │
+//  └───────────┴─────┘    └───────┴─────────┘    └───────┴───────┘
 //
 
 /// A text refinement that consists of methods to make a created text user-friendly.
@@ -58,13 +58,13 @@ internal final class TFRefinement {
     ///
     /// ## Example
     /// ```
-    /// let accurateText = "Hello"
-    /// let comparedText = "Halol"
+    /// let idealString = "Hello"
+    /// let inputString = "Halol"
     /// let configuration = TFConfiguration()
     ///
     /// let rawText = TFOrigin.text(
-    ///     from: comparedText,
-    ///     relyingOn: accurateText,
+    ///     from: inputString,
+    ///     relyingOn: idealString,
     ///     with: configuration
     /// )
     /// /*[.correct("H"),
@@ -89,7 +89,74 @@ internal final class TFRefinement {
         var text = preparing(text)
         text = addindMisspellChars(to: text)
         text = addingSwappedChars(to: text)
+        
+        let exactComplianceIsPassed = checkExactCompliance(for: text, to: configuration)
+        guard exactComplianceIsPassed else { return wrong(text) }
+        
         return text
+    }
+    
+    
+    // MARK: - Convert to Wrong Text
+    
+    /// Converts an annotated text into a simplified representation where all non‑missing characters are treated as extra.
+    ///
+    /// This method is used as a fallback when the refined text does not satisfy the exact compliance requirements defined in the configuration.
+    /// It produces a `TFText` that contains only `.extra` annotations (except for `.missing` characters, which are omitted entirely).
+    @inline(__always)
+    static func wrong(_ text: TFText) -> TFText {
+        var characters = [TFCharacter]()
+        for character in text.characters {
+            switch character.annotation {
+            case .correct, .extra, .misspell, .swapped:
+                characters.append(.extra(character.value))
+            case .missing:
+                break
+            }
+        }
+        return TFText(characters)
+    }
+    
+    
+    // MARK: - Check Exact Compliance
+    
+    /// Checks whether the annotated text strictly complies with the quantity limits defined in the configuration.
+    ///
+    /// Unlike a quick superficial check, this method performs a full statistical analysis based on the character‑by‑character annotations in the `TFText`.
+    /// It counts how many characters are correct, missing, extra, misspelled, or swapped,
+    /// and then compares those counts against the limits specified in `configuration.requiredQuantityOfCorrectCharacters` and `configuration.acceptableQuantityOfWrongCharacters`.
+    ///
+    /// - Returns: `true` if the text satisfies all the quantity constraints defined in the configuration; otherwise `false`.
+    @inline(__always)
+    static func checkExactCompliance(for text: TFText, to configuration: TFConfiguration) -> Bool {
+        
+        var correctCount = 0
+        var missingCount = 0
+        var extraCount = 0
+        var misspellCount = 0
+        var swappedCount = 0
+        for character in text.characters {
+            switch character.annotation {
+            case .correct: correctCount += 1
+            case .missing: missingCount += 1
+            case .extra: extraCount += 1
+            case .misspell: misspellCount += 1
+            case .swapped: swappedCount += 1
+            }
+        }
+        
+        let idealLength = correctCount + missingCount + misspellCount + swappedCount
+        if let requiredCount = configuration.requiredQuantityOfCorrectCharacters.count(for: idealLength, clamped: true) {
+            let matchingCount = correctCount + swappedCount
+            guard requiredCount <= matchingCount else { return false }
+        }
+        
+        if let acceptableCount = configuration.acceptableQuantityOfWrongCharacters.count(for: idealLength) {
+            let wrongCount = missingCount + extraCount + misspellCount + swappedCount / 2
+            guard wrongCount <= acceptableCount else { return false }
+        }
+        
+        return true
     }
     
     
@@ -103,12 +170,12 @@ internal final class TFRefinement {
     ///
     /// ## Example
     /// ```
-    /// let accurateText = "day"
-    /// let comparedText = "dey"
+    /// let idealString = "day"
+    /// let inputString = "dey"
     ///
     /// let rawText = TFOrigin.text(
-    ///     from: comparedText,
-    ///     relyingOn: accurateText,
+    ///     from: inputString,
+    ///     relyingOn: idealString,
     ///     with: TFConfiguration()
     /// )
     /// /*[.correct("d"),
@@ -184,12 +251,12 @@ internal final class TFRefinement {
     ///
     /// ## Exampole
     /// ```
-    /// let accurateText = "day"
-    /// let comparedText = "dya"
+    /// let idealString = "day"
+    /// let inputString = "dya"
     ///
     /// let rawText = TFOrigin.text(
-    ///     from: comparedText,
-    ///     relyingOn: accurateText,
+    ///     from: inputString,
+    ///     relyingOn: idealString,
     ///     with: TFConfiguration()
     /// )
     /// /*[.correct("d"),
@@ -241,12 +308,12 @@ internal final class TFRefinement {
     ///
     /// ## Example
     /// ```
-    /// let accurateText = "day"
-    /// let comparedText = "dyy"
+    /// let idealString = "day"
+    /// let inputString = "dyy"
     ///
     /// let rawText = TFOrigin.text(
-    ///     from: comparedText,
-    ///     relyingOn: accurateText,
+    ///     from: inputString,
+    ///     relyingOn: idealString,
     ///     with: TFConfiguration()
     /// )
     /// /*[.correct("d"),
