@@ -21,7 +21,7 @@ extension TFText {
     /// Returns a new text with the specified case transformation applied to every character.
     ///
     /// ## Example
-    /// ```swift
+    /// ```
     /// let text = TFText("Hello World", annotation: .correct)
     /// text.tranfromed(to: .lowercased)
     /// // TFText("hello world", annotation: .correct)

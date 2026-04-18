@@ -42,17 +42,17 @@ let configuration = TFConfiguration(
 
 | Parameter | Description |
 | :-------- | :---------- |
-| requiredQuantityOfCorrectCharacters | The minimum acceptable quantity of correct characters. |
-| acceptableQuantityOfWrongCharacters | The maximum allowed quantity of wrong characters. |
-| textNormalizations | The normalisations applied to **both** the user text and the reference text before comparison. |
-| textCaseStrategy | The strategy for handling letter case during evaluation. |
+| `requiredQuantityOfCorrectCharacters` | The minimum acceptable quantity of correct characters. |
+| `acceptableQuantityOfWrongCharacters` | The maximum allowed quantity of wrong characters. |
+| `textNormalizations` | The normalisations applied to **both** the user text and the reference text before comparison. |
+| `textCaseStrategy` | The strategy for handling letter case during evaluation. |
 
 
 ## 3. Create a diff text
 
 ```Swift
 let userInput = "Hola"
-let correctAnswer = "Hello"
+let correctAnswer = "hello"
 
 let result = TFText(
     comparing: userInput,

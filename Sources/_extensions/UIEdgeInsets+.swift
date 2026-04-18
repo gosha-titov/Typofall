@@ -2,7 +2,7 @@
 
 import UIKit
 
-extension UIEdgeInsets {
+internal extension UIEdgeInsets {
     
     @inline(__always)
     var vertical: CGFloat {

@@ -172,11 +172,12 @@ internal final class TFRefinement {
     /// ```
     /// let idealString = "day"
     /// let inputString = "dey"
+    /// let configuration = TFConfiguration()
     ///
     /// let rawText = TFOrigin.text(
     ///     from: inputString,
     ///     relyingOn: idealString,
-    ///     with: TFConfiguration()
+    ///     with: configuration
     /// )
     /// /*[.correct("d"),
     ///    .missing("a"),
@@ -184,7 +185,10 @@ internal final class TFRefinement {
     ///    .correct("y")
     /// ]*/
     ///
-    /// let adjustedText = TFRefinement.addingMisspellChars(to: rawText)
+    /// let adjustedText = TFRefinement.addingMisspellChars(
+    ///     to: rawText,
+    ///     with: configuration
+    /// )
     /// /*[.correct ("d"),
     ///    .misspell("e", correct: "a")),
     ///    .correct ("y")
@@ -265,11 +269,12 @@ internal final class TFRefinement {
     /// ```
     /// let idealString = "day"
     /// let inputString = "dya"
+    /// let configuration = TFConfiguration()
     ///
     /// let rawText = TFOrigin.text(
     ///     from: inputString,
     ///     relyingOn: idealString,
-    ///     with: TFConfiguration()
+    ///     with: configuration
     /// )
     /// /*[.correct("d"),
     ///    .extra  ("y"),
@@ -277,7 +282,10 @@ internal final class TFRefinement {
     ///    .missing("y")
     /// ]*/
     ///
-    /// let adjustedText = TFRefinement.addindSwappedChars(to: rawText)
+    /// let adjustedText = TFRefinement.addindSwappedChars(
+    ///     to: rawText,
+    ///     with: configuration
+    /// )
     /// /*[.correct("d"),
     ///    .swapped("y", position: .left),
     ///    .swapped("a", position: .right)
