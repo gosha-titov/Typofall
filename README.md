@@ -1,6 +1,9 @@
+
+<img width="1400" height="788" alt="typofall_logo" src="https://github.com/user-attachments/assets/defda1d3-4820-443b-87c3-e22cc50225e0" />
+
 # Description
 
-**Typofall** is a powerful Swift framework for detecting and visualising typos by comparing a user’s input against a reference (ideal) text.
+`Typofall` is a powerful Swift framework for detecting and visualising typos by comparing a user’s input against a reference (ideal) text.
 It handles missing characters, extra characters, misspellings, and swapped adjacent characters, then presents the result as an annotated, user‑friendly diff.
 
 This direct approach allows you to find typos of any complexity in the user text, and therefore allows you to draw necessary conclusions.
@@ -12,7 +15,7 @@ This direct approach allows you to find typos of any complexity in the user text
 - **Quantity‑based validation** – define how many correct or wrong characters are acceptable (e.g., at least 75% correct, or up to 3 mistakes allowed).
 - **Case handling** – case‑sensitive or case‑insensitive comparison, with optional text transformation (lowercase, uppercase, capitalized).
 - **Text normalisations** – trim whitespace, collapse multiple spaces, etc., before comparison.
-- **Ready‑to‑use UI** – `TFView` displays the diff with colours, strikethrough, underlines, and arrow indicators for swapped characters.
+- **Ready‑to‑use UI** – `TFView` displays the diff with colors, strikethrough, underlines, and arrow indicators for swapped characters.
 - **Efficient algorithm** – uses a three‑layer mathematical model to compute and refine diffs accurately.
 
 
@@ -40,8 +43,8 @@ let configuration = TFConfiguration(
 | Parameter | Description |
 | :-------- | :---------- |
 | requiredQuantityOfCorrectCharacters | The minimum acceptable quantity of correct characters. |
-| acceptableQuantityOfWrongCharacters | The maximum allowed quantity of wrong characters (missing, extra, misspelled, half‑swapped). |
-| textNormalizations | The normalisations applied to **both** the user text and the reference text before comparison: `.trimmingWhitespace`, `.collapsingWhitespace` |
+| acceptableQuantityOfWrongCharacters | The maximum allowed quantity of wrong characters. |
+| textNormalizations | The normalisations applied to **both** the user text and the reference text before comparison. |
 | textCaseStrategy | The strategy for handling letter case during evaluation. |
 
 
