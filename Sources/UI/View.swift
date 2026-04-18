@@ -302,7 +302,7 @@ extension TFView {
         lowerLabel.frame = CGRect(
             origin: CGPoint(
                 x: textX,
-                y: boundingRect.maxY - yOffset
+                y: boundingRect.maxY - yOffset - textHeight
             ),
             size: textSize
         )

@@ -83,6 +83,7 @@ extension TFStrategy {
         }
     }
     
+    
     /// Creates a default case‑insensitive strategy.
     public init() {
         self = .insensitive(.unchanged)

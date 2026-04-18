@@ -16,8 +16,6 @@ public enum TFQuantity: Equatable, Sendable {
     case none
     
     
-    // MARK: Coefficients
-    
     /// The default quantity associated with 100% of chars, that is, the coefficient is `1.0`.
     case all
     
@@ -34,8 +32,6 @@ public enum TFQuantity: Equatable, Sendable {
     /// - Important: Must be between `0.0` and `1.0`.
     case coefficient(Double)
     
-    
-    // MARK: Numbers
     
     /// The default quantity associated with 1 char.
     case one
@@ -85,8 +81,6 @@ extension TFQuantity {
     }
     
     
-    // MARK: Methods
-    
     /// Returns the effective integer count for a given total text length.
     internal func count(for length: Int, clamped: Bool = false) -> Int? {
         if let coefficient {
@@ -100,8 +94,6 @@ extension TFQuantity {
         return nil
     }
     
-    
-    // MARK: Init
     
     /// Creates a quantity with the `.none` value.
     public init() {

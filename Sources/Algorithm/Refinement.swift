@@ -19,34 +19,34 @@
 // Step 0: preparing source text
 // –––––––––––––––––––––––––––––
 //
-//    Initial values         After creation        After preparation      After refinement
-//  ┌───────────┬─────┐    ┌───────┬─────────┐    ┌───────┬─────────┐    ┌───────┬───────┐
-//  │ idealText │ day │    │ chars │ d a y y │    │ chars │ d a y y │    │ chars │ d y y │
-//  ├───────────┼─────┤ ─> ├───────┼─────────┤ ─> ├───────┼─────────┤ ─> ├───────┼───────┤
-//  │ inputText │ dyy │    │ types │ + ? + ! │    │ types │ + ? ! + │    │ types │ + a + │
-//  └───────────┴─────┘    └───────┴─────────┘    └───────┴─────────┘    └───────┴───────┘
+//     Initial values          After creation        After preparation      After refinement
+//  ┌─────────────┬─────┐    ┌───────┬─────────┐    ┌───────┬─────────┐    ┌───────┬───────┐
+//  │ idealString │ day │    │ chars │ d a y y │    │ chars │ d a y y │    │ chars │ d y y │
+//  ├─────────────┼─────┤ ─> ├───────┼─────────┤ ─> ├───────┼─────────┤ ─> ├───────┼───────┤
+//  │ inputString │ dyy │    │ types │ + ? + ! │    │ types │ + ? ! + │    │ types │ + a + │
+//  └─────────────┴─────┘    └───────┴─────────┘    └───────┴─────────┘    └───────┴───────┘
 //
 //
 // Step 1: adding misspell chars
 // –––––––––––––––––––––––––––––
 //
-//    Initial values         After creation        After refinement
-//  ┌───────────┬─────┐    ┌───────┬─────────┐    ┌───────┬───────┐
-//  │ idealText │ day │    │ chars │ d a e y │    │ chars │ d e y │
-//  ├───────────┼─────┤ ─> ├───────┼─────────┤ ─> ├───────┼───────┤
-//  │ inputText │ dey │    │ types │ + ? ! + │    │ types │ + a + │
-//  └───────────┴─────┘    └───────┴─────────┘    └───────┴───────┘
+//     Initial values          After creation        After refinement
+//  ┌─────────────┬─────┐    ┌───────┬─────────┐    ┌───────┬───────┐
+//  │ idealString │ day │    │ chars │ d a e y │    │ chars │ d e y │
+//  ├─────────────┼─────┤ ─> ├───────┼─────────┤ ─> ├───────┼───────┤
+//  │ inputString │ dey │    │ types │ + ? ! + │    │ types │ + a + │
+//  └─────────────┴─────┘    └───────┴─────────┘    └───────┴───────┘
 //
 //
 // Step 2: adding swapped chars
 // ––––––––––––––––––––––––––––
 //
-//    Initial values         After creation        After refinement
-//  ┌───────────┬─────┐    ┌───────┬─────────┐    ┌───────┬───────┐
-//  │ idealText │ day │    │ chars │ d y a y │    │ chars │ d y a │
-//  ├───────────┼─────┤ ─> ├───────┼─────────┤ ─> ├───────┼───────┤
-//  │ inputText │ dya │    │ types │ + ! + ? │    │ types │ + ^ ^ │
-//  └───────────┴─────┘    └───────┴─────────┘    └───────┴───────┘
+//     Initial values          After creation        After refinement
+//  ┌─────────────┬─────┐    ┌───────┬─────────┐    ┌───────┬───────┐
+//  │ idealString │ day │    │ chars │ d y a y │    │ chars │ d y a │
+//  ├─────────────┼─────┤ ─> ├───────┼─────────┤ ─> ├───────┼───────┤
+//  │ inputString │ dya │    │ types │ + ! + ? │    │ types │ + ^ ^ │
+//  └─────────────┴─────┘    └───────┴─────────┘    └───────┴───────┘
 //
 
 /// A text refinement that consists of methods to make a created text user-friendly.
@@ -63,9 +63,9 @@ internal final class TFRefinement {
     /// let configuration = TFConfiguration()
     ///
     /// let rawText = TFOrigin.text(
-    ///     from: inputString,
-    ///     relyingOn: idealString,
-    ///     with: configuration
+    ///     comparing: inputString,
+    ///     against: idealString,
+    ///     using: configuration
     /// )
     /// /*[.correct("H"),
     ///    .missing("e"),
@@ -76,19 +76,19 @@ internal final class TFRefinement {
     ///    .missing("o")
     /// ]*/
     ///
-    /// let text = TFRefinement.refining(rawText, with: configuration)
+    /// let text = TFRefinement.refining(rawText, using: configuration)
     /// /*[.correct ("H"),
-    ///    .misspell("a", correct: "o"),
+    ///    .misspell("a", correct: "e"),
     ///    .correct ("l"),
     ///    .swapped ("o", position: .left),
     ///    .swapped ("l", position: .right)
     /// ]*/
     /// ```
     /// - Returns: The edited text that is user-friendly and is ready to be displayed.
-    static func refining(_ text: TFText, with configuration: TFConfiguration) -> TFText {
+    static func refining(_ text: TFText, using configuration: TFConfiguration) -> TFText {
         var text = preparing(text)
-        text = addindMisspellChars(to: text)
-        text = addingSwappedChars(to: text)
+        text = addingMisspellChars(to: text, with: configuration)
+        text = addingSwappedChars(to: text, with: configuration)
         
         let exactComplianceIsPassed = checkExactCompliance(for: text, to: configuration)
         guard exactComplianceIsPassed else { return wrong(text) }
@@ -184,7 +184,7 @@ internal final class TFRefinement {
     ///    .correct("y")
     /// ]*/
     ///
-    /// let adjustedText = TFRefinement.addindMisspellChars(to: rawText)
+    /// let adjustedText = TFRefinement.addingMisspellChars(to: rawText)
     /// /*[.correct ("d"),
     ///    .misspell("e", correct: "a")),
     ///    .correct ("y")
@@ -192,7 +192,7 @@ internal final class TFRefinement {
     /// ```
     /// - Returns: A new text where `.missing` and `.extra` pairs have been replaced with `.misspell` annotations.
     @inline(__always)
-    static func addindMisspellChars(to text: TFText) -> TFText {
+    static func addingMisspellChars(to text: TFText, with configuration: TFConfiguration) -> TFText {
         guard text.count > 1 else { return text }
         
         var indecesOfMissingChars = [Int]()
@@ -202,26 +202,38 @@ internal final class TFRefinement {
         
         for i in 0..<text.count {
             var index: Int { i + offset }
+            
+            func misspell(extraChar: Character, missingChar: Character, at misspellIndex: Int) {
+                let hasCorrectCase: Bool? = if configuration.textCaseStrategy.isSensitive,
+                   let extraCharIsLowercased = extraChar.isLowercased,
+                   let missingCharIsLowercased = missingChar.isLowercased {
+                    extraCharIsLowercased == missingCharIsLowercased
+                } else { nil }
+                text[misspellIndex] = .misspell(extraChar, correct: missingChar, hasCorrectCase: hasCorrectCase)
+                text.remove(at: index)
+                offset -= 1
+            }
+            
             switch text[index].annotation {
              case .missing:
                  if indecesOfExtraChars.count > 0 {
                      let indexOfExtraChar = indecesOfExtraChars.removeFirst()
-                     let extraChar = text[indexOfExtraChar].value
-                     let missingChar = text[index].value
-                     text[indexOfExtraChar] = .misspell(extraChar, correct: missingChar)
-                     text.remove(at: index)
-                     offset -= 1
+                     misspell(
+                        extraChar: text[indexOfExtraChar].value,
+                        missingChar: text[index].value,
+                        at: indexOfExtraChar
+                     )
                  } else {
                      indecesOfMissingChars.append(index)
                  }
              case .extra:
                  if indecesOfMissingChars.count > 0 {
                      let indexOfMissingChar = indecesOfMissingChars.removeFirst()
-                     let missingChar = text[indexOfMissingChar].value
-                     let extraChar = text[index].value
-                     text[indexOfMissingChar] = .misspell(extraChar, correct: missingChar)
-                     text.remove(at: index)
-                     offset -= 1
+                     misspell(
+                        extraChar: text[index].value,
+                        missingChar: text[indexOfMissingChar].value,
+                        at: indexOfMissingChar
+                     )
                  } else {
                      indecesOfExtraChars.append(index)
                  }
@@ -273,7 +285,7 @@ internal final class TFRefinement {
     /// ```
     /// - Returns: A new text where detected swap patterns are replaced with `.swapped` annotations.
     @inline(__always)
-    static func addingSwappedChars(to text: TFText) -> TFText {
+    static func addingSwappedChars(to text: TFText, with configuration: TFConfiguration) -> TFText {
         guard text.count > 1 else { return text }
         
         var text = text
@@ -287,8 +299,16 @@ internal final class TFRefinement {
             let currCharIsCorrect = text[currIndex].isCorrect
             
             if prevAndNextCharsAreEqual, prevChar.isExtra, currCharIsCorrect, nextChar.isMissing {
+                
+                let hasCorrectCase: Bool? = if configuration.textCaseStrategy.isSensitive,
+                   let isLowercased1 = prevChar.value.isLowercased,
+                   let isLowercased2 = nextChar.value.isLowercased {
+                    isLowercased1 == isLowercased2
+                } else { nil }
+                
                 text[prevIndex].annotation = .swapped(position: .left)
                 text[currIndex].annotation = .swapped(position: .right)
+                text[prevIndex].hasCorrectCase = hasCorrectCase
                 text.remove(at: nextIndex)
             }
         }
@@ -337,21 +357,39 @@ internal final class TFRefinement {
         var countOfEqualCorrectChars = Int()
         var countOfMissingChars = Int()
         var indexOfFirstCorrectChar: Int? = nil
+        
+        var _countOfMissingChars = Int()
+        
         var text = text
         
         func resetValues() -> Void {
             indexOfFirstCorrectChar = nil
             countOfEqualCorrectChars = 0
             countOfMissingChars = 0
+            _countOfMissingChars = 0
         }
         
         for (currentIndex, currentChar) in text.enumerated() {
             switch currentChar.annotation {
             case .missing:
-                countOfMissingChars += 1
-                indexOfFirstCorrectChar = nil
-                countOfEqualCorrectChars = 0
+                if countOfEqualCorrectChars > 0 {
+                    _countOfMissingChars += 1
+                } else {
+                    if _countOfMissingChars > 0 {
+                        countOfMissingChars = _countOfMissingChars
+                        _countOfMissingChars = 0
+                    }
+                    countOfMissingChars += 1
+                    indexOfFirstCorrectChar = nil
+                    countOfEqualCorrectChars = 0
+                }
             case .correct:
+                if _countOfMissingChars > 0 {
+                    countOfMissingChars = _countOfMissingChars
+                    indexOfFirstCorrectChar = nil
+                    countOfEqualCorrectChars = 0
+                    _countOfMissingChars = 0
+                }
                 guard countOfMissingChars > 0 else {
                     indexOfFirstCorrectChar = nil
                     countOfEqualCorrectChars = 0
@@ -368,14 +406,18 @@ internal final class TFRefinement {
                 }
                 countOfEqualCorrectChars += 1
             case .extra:
-                guard countOfMissingChars > 0, let indexOfFirstChar = indexOfFirstCorrectChar,
-                      text[indexOfFirstChar].value.lowercased() == currentChar.value.lowercased()
+                guard countOfMissingChars > 0, let firstCorrectIndex = indexOfFirstCorrectChar,
+                      text[firstCorrectIndex].value.lowercased() == currentChar.value.lowercased()
                 else {
                     resetValues()
                     continue
                 }
-                let indexOfLastChar = indexOfFirstChar + countOfEqualCorrectChars - 1
-                for index in ((indexOfFirstChar + 1)...(indexOfLastChar + 1)).reversed() {
+                let lastCorrectIndex = firstCorrectIndex + countOfEqualCorrectChars - 1
+                if currentIndex != lastCorrectIndex + 1 {
+                    let extraCharacter = text.remove(at: currentIndex)
+                    text.insert(extraCharacter, at: lastCorrectIndex)
+                }
+                for index in ((firstCorrectIndex + 1)...(lastCorrectIndex + 1)).reversed() {
                     let previousChar = text[index - 1]
                     if let previousLetterCase = previousChar.hasCorrectCase {
                         let currentChar = text[index]
@@ -389,8 +431,8 @@ internal final class TFRefinement {
                     }
                     text[index].annotation = .correct
                 }
-                text[indexOfFirstChar].hasCorrectCase = nil
-                text[indexOfFirstChar].annotation = .extra
+                text[firstCorrectIndex].hasCorrectCase = nil
+                text[firstCorrectIndex].annotation = .extra
                 indexOfFirstCorrectChar! += 1
                 countOfMissingChars -= 1
             default:
@@ -399,6 +441,19 @@ internal final class TFRefinement {
         }
         
         return text
+    }
+    
+}
+
+
+
+// MARK: - Helpers
+
+private extension Character {
+    
+    var isLowercased: Bool? {
+        guard isLetter else { return nil }
+        return String(self) == lowercased()
     }
     
 }

@@ -51,8 +51,8 @@ extension TFText {
     ///   - idealText: The reference text (the correct version).
     ///   - configuration: The configuration that defines the rules for evaluating a user’s text against a reference (e.g., case sensitivity, text transformations).
     public init(comparing inputText: String, against idealText: String, using configuration: TFConfiguration) {
-        let rawText = TFOrigin.text(from: inputText, relyingOn: idealText, with: configuration)
-        self = TFRefinement.refining(rawText, with: configuration)
+        let rawText = TFOrigin.text(comparing: inputText, against: idealText, using: configuration)
+        self = TFRefinement.refining(rawText, using: configuration)
     }
     
 }
@@ -139,9 +139,11 @@ extension TFText {
     /// Returns a capitalized version of the text.
     @inline(__always)
     internal func capitalized() -> Self {
-        guard let first = first?.uppercased() else { return .empty }
-        guard count > 1 else { return [first] }
-        return TFText([first] + self[1...].map { $0.lowercased() })
+        let string = String(characters.map(\.value)).capitalized
+        let characters = characters.enumerated().map { index, character in
+            TFCharacter(string[index], annotation: character.annotation)
+        }
+        return TFText(characters)
     }
   
     /// Returns an uppercased version of the text.
@@ -164,9 +166,9 @@ extension TFText {
     }
     
     /// Removes the character at the specified position.
-    @inline(__always)
-    internal mutating func remove(at index: Index) {
-        characters.remove(at: index)
+    @discardableResult @inline(__always)
+    internal mutating func remove(at index: Index) -> TFCharacter {
+        return characters.remove(at: index)
     }
     
     

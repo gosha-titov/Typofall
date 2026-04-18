@@ -27,7 +27,7 @@ public enum TFAnnotation: Equatable, Sendable {
 extension TFAnnotation {
     
     /// A type that specifies whether a swapped character appears before or after its correct position.
-    public enum SwappedPosition: Equatable, Sendable {
+    public enum SwappedPosition: String, Equatable, Sendable {
         
         /// The position of a character that is to the left of its correct position.
         case left

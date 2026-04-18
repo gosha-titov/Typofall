@@ -27,9 +27,13 @@ public struct TFCharacter: Equatable, Sendable {
     
     /// Creates a diff character instance with the specified parameters.
     public init(_ value: Character, annotation: TFAnnotation, hasCorrectCase: Bool? = nil) {
-        self.hasCorrectCase = hasCorrectCase
         self.annotation = annotation
         self.value = value
+        if annotation.isMissing || annotation.isExtra {
+            self.hasCorrectCase = nil
+        } else {
+            self.hasCorrectCase = hasCorrectCase
+        }
     }
     
 }
@@ -103,6 +107,23 @@ extension TFCharacter {
 }
 
 
+extension TFCharacter: CustomStringConvertible {
+    
+    public var description: String {
+        let begin = switch annotation {
+        case .correct: ".correct(\(value)"
+        case .missing: ".missing(\(value)"
+        case .extra: ".extra(\(value)"
+        case .misspell(let correctChar): ".misspell(\(value), correct: \(correctChar)"
+        case .swapped(let position): ".swapped(\(value), \(position)"
+        }
+        let end = if let hasCorrectCase { "hasCorrectCase: \(hasCorrectCase))" } else { ")" }
+        return begin + end
+    }
+    
+}
+
+
 
 // MARK: - Syntactic Sugar
 
@@ -114,13 +135,13 @@ extension TFCharacter {
     }
     
     /// Creates a character with the `.missing` annotation.
-    public static func missing(_ value: Character, hasCorrectCase: Bool? = nil) -> Self {
-        return TFCharacter(value, annotation: .missing, hasCorrectCase: hasCorrectCase)
+    public static func missing(_ value: Character) -> Self {
+        return TFCharacter(value, annotation: .missing)
     }
     
     /// Creates a character with the `.extra` annotation.
-    public static func extra(_ value: Character, hasCorrectCase: Bool? = nil) -> Self {
-        return TFCharacter(value, annotation: .extra, hasCorrectCase: hasCorrectCase)
+    public static func extra(_ value: Character) -> Self {
+        return TFCharacter(value, annotation: .extra)
     }
     
     /// Creates a character with the `.misspell` annotation.

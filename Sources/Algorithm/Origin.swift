@@ -8,12 +8,12 @@
 // Example of creating a text
 // ––––––––––––––––––––––––––
 //
-//  idealText = "hello"
-//  inputText = "hola"
+//  idealStromg = "hello"
+//  inputStromg = "hola"
 //
 //  ┌─────────────────┬───────────────┐  ┌───────────────┐
-//  │ idealText       │ h e   l l o   │  │ Legend        │
-//  │ inputText       │ h   o l     a │  ├───────────────┤
+//  │ idealString     │ h e   l l o   │  │ Legend        │
+//  │ inputString     │ h   o l     a │  ├───────────────┤
 //  ├─────────────────┼───────────────┤  │ "+" – correct │
 //  │ sourceSequence  │ 0 1   2 3 4   │  │ "?" - missing │
 //  │ sequence        │ 0   4 2    nil│  │ "!" – extra   │
@@ -26,8 +26,8 @@
 //  └─────────────────┴───────────────┘
 //
 //  How to read the diagram:
-//  - `sourceSequence` is the indices of `accurateText` (0..<n).
-//  - `sequence` maps each character of `comparedText` to an index in `accurateText` (or `nil` if no match).
+//  - `sourceSequence` is the indices of `idealString` (0..<n).
+//  - `sequence` maps each character of `inputString` to an index in `idealString` (or `nil` if no match).
 //  - `subsequence` is the longest increasing subsequence of `sequence`.
 //  - `missingElements` are indices in `sourceSequence` not present in `subsequence`.
 //  - The created text interleaves user characters (with `.correct` or `.extra`) and inserted missing characters (`.missing`) at the correct positions.
@@ -54,16 +54,16 @@ internal final class TFOrigin {
     ///
     /// ## Example
     /// ```
-    /// let idealText = "Hello"
-    /// let inputText = "hola"
+    /// let idealString = "Hello"
+    /// let inputString = "hola"
     ///
     /// let configuration = TFConfiguration(
     ///     textCaseStrategy: .insensitive(.capitalized)
     /// )
     /// let text = TFOrigin.text(
-    ///     from: inputText,
-    ///     relyingOn: idealText,
-    ///     with: configuration
+    ///     comparing: inputString,
+    ///     against: idealString,
+    ///     using: configuration
     /// )
     /// /*[.correct("H"),
     ///    .missing("e"),
@@ -77,13 +77,13 @@ internal final class TFOrigin {
     ///
     /// The formation is performed if there is at least one correct char; otherwise, it returns extra or missing text.
     /// ```
-    /// let idealText = "bye"
-    /// let inputText = "hi!"
+    /// let idealString = "bye"
+    /// let inputString = "hi!"
     ///
     /// let text = TFOrigin.text(
-    ///     from: inputText,
-    ///     relyingOn: idealText,
-    ///     with: TFConfiguration()
+    ///     comparing: inputString,
+    ///     against: idealString,
+    ///     using: TFConfiguration()
     /// )
     ///
     /// /*[.extra("h"),
@@ -92,28 +92,28 @@ internal final class TFOrigin {
     /// ]*/
     /// ```
     /// - Returns: A raw `TFText` where each character is annotated as `.correct`, `.extra`, or `.missing`.
-    static func text(from inputText: String, relyingOn idealText: String, with configuration: TFConfiguration) -> TFText {
+    static func text(comparing inputString: String, against idealString: String, using configuration: TFConfiguration) -> TFText {
         
-        let inputText = inputText.normalized(with: configuration.textNormalizations)
-        let idealText = idealText.normalized(with: configuration.textNormalizations)
+        let inputString = inputString.normalized(with: configuration.textNormalizations)
+        let idealString = idealString.normalized(with: configuration.textNormalizations)
         
-        var missingIdealText: TFText { TFText(idealText, .missing, configuration.textCaseStrategy.transformation) }
-        var wrongInputText:   TFText { TFText(inputText, .extra,   configuration.textCaseStrategy.transformation) }
+        var missingIdealText: TFText { TFText(idealString, .missing, configuration.textCaseStrategy.transformation) }
+        var wrongInputText:   TFText { TFText(inputString, .extra,   configuration.textCaseStrategy.transformation) }
         
-        guard !inputText.isEmpty else { return missingIdealText }
-        guard !idealText.isEmpty else { return wrongInputText   }
+        guard !inputString.isEmpty else { return missingIdealText }
+        guard !idealString.isEmpty else { return wrongInputText   }
         
-        let quickComplianceIsPassed = checkQuickCompliance(for: inputText, relyingOn: idealText, to: configuration)
+        let quickComplianceIsPassed = checkQuickCompliance(for: inputString, relyingOn: idealString, to: configuration)
         guard quickComplianceIsPassed else { return wrongInputText }
         
-        let basis = TFAlgebra.basis(diffing: inputText, against: idealText)
+        let basis = TFAlgebra.basis(diffing: inputString, against: idealString)
         
         guard !basis.subsequence.isEmpty else { return wrongInputText }
         
         var text = wrongInputText
         
-        text = addingCorrectChars(to: text, relyingOn: idealText, basedOn: basis, conformingTo: configuration)
-        text = addingMissingChars(to: text, relyingOn: idealText, basedOn: basis, conformingTo: configuration)
+        text = addingCorrectChars(to: text, relyingOn: idealString, basedOn: basis, conformingTo: configuration)
+        text = addingMissingChars(to: text, relyingOn: idealString, basedOn: basis, conformingTo: configuration)
         
         if let transformation = configuration.textCaseStrategy.transformation {
             text = text.tranfromed(to: transformation)
@@ -138,7 +138,7 @@ internal final class TFOrigin {
     ///   Insertion respects the original relative order.
     /// - Returns: A new `TFText` where missing characters are inserted as `.missing`.
     @inline(__always)
-    static func addingMissingChars(to text: TFText, relyingOn idealText: String, basedOn basis: TFBasis, conformingTo configuration: TFConfiguration) -> TFText {
+    static func addingMissingChars(to text: TFText, relyingOn idealString: String, basedOn basis: TFBasis, conformingTo configuration: TFConfiguration) -> TFText {
         
         var text = text, subindex = Int()
         var subelement: Int { basis.subsequence[subindex] }
@@ -149,7 +149,7 @@ internal final class TFOrigin {
             
             func insert(_ indeces: [Int]) -> Void {
                 for index in indeces.reversed() {
-                    let character = idealText[index]
+                    let character = idealString[index]
                     text.insert(.missing(character), at: indexToInsert)
                 }
             }
@@ -186,7 +186,7 @@ internal final class TFOrigin {
     ///   and that the text contains the user's original characters.
     /// - Returns: A new `TFText` where the matched characters are marked as `.correct` and have their case correctness set if applicable.
     @inline(__always)
-    static func addingCorrectChars(to text: TFText, relyingOn idealText: String, basedOn basis: TFBasis, conformingTo configuration: TFConfiguration) -> TFText {
+    static func addingCorrectChars(to text: TFText, relyingOn idealString: String, basedOn basis: TFBasis, conformingTo configuration: TFConfiguration) -> TFText {
         
         var text = text, subindex = Int()
         var subelement: Int { basis.subsequence[subindex] }
@@ -195,7 +195,7 @@ internal final class TFOrigin {
         
         for (index, element) in basis.sequence.enumerated() where element == subelement {
             if shouldCompareLetterCases {
-                let accurateChar = idealText[subelement]
+                let accurateChar = idealString[subelement]
                 let comparedChar = text[index].value // because initially, all these chars match chars of the compared text
                 text[index].hasCorrectCase = accurateChar == comparedChar
             }
@@ -226,21 +226,21 @@ internal final class TFOrigin {
     /// - Returns: `true` if the compared text **could possibly** satisfy all configuration requirements (based only on character frequencies);
     ///  `false` if it is **impossible** to satisfy them.
     @inline(__always)
-    static func checkQuickCompliance(for inputText: String, relyingOn idealText: String, to configuration: TFConfiguration) -> Bool {
+    static func checkQuickCompliance(for inputString: String, relyingOn idealString: String, to configuration: TFConfiguration) -> Bool {
         
-        let commonCount = TFAlgebra.commonCharactersCount(between: inputText, and: idealText)
+        let commonCount = TFAlgebra.commonCharactersCount(between: inputString, and: idealString)
         
         guard commonCount > 0 else { return false }
         
-        let accurateLength = idealText.count
+        let accurateLength = idealString.count
         
         if let requiredCount = configuration.requiredQuantityOfCorrectCharacters.count(for: accurateLength, clamped: true) {
             guard requiredCount <= commonCount else { return false }
         }
         
         if let acceptableCount = configuration.acceptableQuantityOfWrongCharacters.count(for: accurateLength) {
-            let missingCount = idealText.count - commonCount
-            let wrongCount = inputText.count - commonCount
+            let missingCount = idealString.count - commonCount
+            let wrongCount = inputString.count - commonCount
             // Wrong and missing characters can be paired into misspellings,
             // so the actual number of mistakes may be as low as max(extras, missing).
             // This gives an optimistic lower bound on the number of mistakes,
