@@ -221,15 +221,15 @@ open class TFView: UIScrollView {
                     lowerString.append(arrow)
                 }
             }
-            upperLabel.attributedText = upperString
-            mainLabel .attributedText = centerString
-            lowerLabel.attributedText = lowerString
-            upperLabel.invalidateIntrinsicContentSize()
-            mainLabel .invalidateIntrinsicContentSize()
-            lowerLabel.invalidateIntrinsicContentSize()
-            needsLayout = true
-            setNeedsLayout()
         }
+        upperLabel.attributedText = upperString
+        mainLabel .attributedText = centerString
+        lowerLabel.attributedText = lowerString
+        upperLabel.invalidateIntrinsicContentSize()
+        mainLabel .invalidateIntrinsicContentSize()
+        lowerLabel.invalidateIntrinsicContentSize()
+        needsLayout = true
+        setNeedsLayout()
     }
     
     /// Lays out subviews.
